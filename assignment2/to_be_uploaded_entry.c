@@ -139,14 +139,14 @@ u64 do_syscall(int syscall, u64 param1, u64 param2, u64 param3, u64 param4)
                                 if((l1[l1_index]&0x1)==1){
                                     os_pfn_free(USER_REG,l1[l1_index]>>12);
                                     l1[l1_index] &= 0x0; 
-                                }
-
+                                 }
+                              }
                                 if(flags==MAP_RD)
                                   current->mms[MM_SEG_RODATA].next_free = next_free-size*4096;
                                 else
                                   current->mms[MM_SEG_DATA].next_free = next_free-size*4096;
                                 return next_free-size*4096;
-                              }
+                              
                                    
                             }
                              
