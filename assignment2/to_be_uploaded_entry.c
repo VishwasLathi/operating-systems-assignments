@@ -117,10 +117,12 @@ u64 do_syscall(int syscall, u64 param1, u64 param2, u64 param3, u64 param4)
                                     printf("size moved out of boundary while contracting\n");
                                     return 0; 
                                 }
+                              u64 cr3;  
                               for(int i=1;i<=size;i++){
                                 u64 virtual_add = next_free-i*4096;
+                                asm volatile("movq %%cr3, %0;" : "=r" (cr3));
+                                asm volatile ("movq %0, %%cr3;":: "r" (cr3));
                                 
-                    
                                 l1_index = (virtual_add)>>12 & 0x1FF;
                                 l2_index = (virtual_add)>>21 & 0x1FF;
                                 l3_index=(virtual_add)>>30 & 0x1FF;
