@@ -7,19 +7,19 @@
 u64 do_syscall(int syscall, u64 param1, u64 param2, u64 param3, u64 param4)
 {
     struct exec_context *current = get_current_ctx();
-    printf("[GemOS] System call invoked. syscall no  = %d\n", syscall);
+    //printf("[GemOS] System call invoked. syscall no  = %d\n", syscall);
     switch(syscall)
     {
           case SYSCALL_EXIT:
-                              printf("[GemOS] exit code = %d\n", (int) param1);
+                              //printf("[GemOS] exit code = %d\n", (int) param1);
                               do_exit();
                               break;
           case SYSCALL_GETPID:
-                              printf("[GemOS] getpid called for process %s, with pid = %d\n", current->name, current->id);
+                              //printf("[GemOS] getpid called for process %s, with pid = %d\n", current->name, current->id);
                               return current->id;      
           case SYSCALL_WRITE:
                             {  
-                              printf("I will be writing: ");
+                              //printf("I will be writing: ");
                               char *buff = (char*)param1;
                               u32 length = (u32)param2;
                               if(length<0||length>1024)
@@ -32,10 +32,8 @@ u64 do_syscall(int syscall, u64 param1, u64 param2, u64 param3, u64 param4)
                                 if(i==0)
                                   virtual_add = param1;
                                 else{
-                                  if((param1 + length)/4096 > (param1)/4096)
-                                    //should it be param1 + length -1 ?,
-                                    //doing param1 + length because '\0' is getting stored in param1+length. 
-                                    virtual_add  = param1+length ;
+                                  if((param1 + length-1)/4096 > (param1)/4096)
+                                    virtual_add  = param1+length -1;
                                   else
                                     continue;  
                                 }
@@ -64,18 +62,11 @@ u64 do_syscall(int syscall, u64 param1, u64 param2, u64 param3, u64 param4)
                                 if((l1[l1_index]&0x1)==0)
                                   return -1;
                               }
-                              int i=0;
-                              while(buff[i]!='\0')
-                                i++;
-                              if(i!=length){
-                                printf("incorrect length\n");
-                                return -1;    
-                              }
-                              for(u32 i=0;i<length;i++){
-                                printf("%c",buff[i]);
-                              }
-
-                              printf("\n");
+                             
+                        
+                              for(int i=0;i<length;i++)
+                                  printf("%c",buff[i]);
+                              //printf("\n");
                                 
 
                             }
@@ -95,7 +86,7 @@ u64 do_syscall(int syscall, u64 param1, u64 param2, u64 param3, u64 param4)
                               u64 end = m.end;
                               
                               if(next_free+size*4096-1> end){
-                                    printf("size moved out of boundary while expanding\n");
+                                    //printf("size moved out of boundary while expanding\n");
                                     return 0;
                                 }
                               if(flags==MAP_RD)
@@ -123,13 +114,14 @@ u64 do_syscall(int syscall, u64 param1, u64 param2, u64 param3, u64 param4)
                               u64 *l1,*l2,*l3,*l4;
 
                               if(next_free-size*4096<start){
-                                    printf("size moved out of boundary while contracting\n");
+                                    //printf("size moved out of boundary while contracting\n");
                                     return 0; 
                                 }
+                              
                               for(int i=1;i<=size;i++){
                                 u64 virtual_add = next_free-i*4096;
                                 
-                    
+            
                                 l1_index = (virtual_add)>>12 & 0x1FF;
                                 l2_index = (virtual_add)>>21 & 0x1FF;
                                 l3_index=(virtual_add)>>30 & 0x1FF;
@@ -146,16 +138,17 @@ u64 do_syscall(int syscall, u64 param1, u64 param2, u64 param3, u64 param4)
                                     continue;
                                 l1=(u64*)osmap((u32)(l2[l2_index]>>12));
                                 if((l1[l1_index]&0x1)==1){
+                                    asm volatile("invlpg (%0)" ::"r" (virtual_add) : "memory");
                                     os_pfn_free(USER_REG,l1[l1_index]>>12);
                                     l1[l1_index] &= 0x0; 
-                                }
-
+                                 }
+                              }
                                 if(flags==MAP_RD)
                                   current->mms[MM_SEG_RODATA].next_free = next_free-size*4096;
                                 else
                                   current->mms[MM_SEG_DATA].next_free = next_free-size*4096;
                                 return next_free-size*4096;
-                              }
+                              
                                    
                             }
                              
@@ -169,8 +162,7 @@ u64 do_syscall(int syscall, u64 param1, u64 param2, u64 param3, u64 param4)
 extern u64 handle_div_by_zero(void)
 {
     register u64* os_stack asm("rbp");
-  
-    printf("Div-by-zero handler detected at %x\n",*(os_stack+1));
+    printf("Div-by-zero detected at %x\n",*(os_stack+1));
     //printf("+8 Div-by-zero handler detected at %x\n",*(os_stack+8));
     do_exit();
     return 0;
@@ -197,7 +189,7 @@ void allocate(u64 virtual_add,struct mm_segment m){
     for(int level=4;level>=1;level--){
         if(level==1){
             if((l1[l1_index] & 0x1)==1){
-                printf("memory already allocated\n");
+                //printf("memory already allocated\n");
                 return;    
             }
             u32 a=os_pfn_alloc(USER_REG);
@@ -311,12 +303,12 @@ extern u64 handle_page_fault(void)
     asm volatile("movq 16(%%rbp), %0;" : "=r" (RIP));
     asm volatile("movq %%cr2, %0;" : "=r" (virtual_add));
     asm volatile ("movq %%rsp, %0;" : "=r"(save));
-    printf("values of RIP %x, virtual address %x, error code %x\n",RIP,virtual_add,error_code);
+    //printf("values of RIP %x, virtual address %x, error code %x\n",RIP,virtual_add,error_code);
     
     //check protection violation
     if((error_code&0x1)==1){
-        printf("error code : protecion violation at RIP: %x, virtual address: %x, error code: %x\n",RIP,virtual_add,error_code);
-        printf("****************\n");
+        printf("error at RIP: %x, virtual address: %x, error code: %x\n",RIP,virtual_add,error_code);
+        //printf("****************\n");
         do_exit();
         return 0;
     }
@@ -324,37 +316,35 @@ extern u64 handle_page_fault(void)
     int region = check_present(virtual_add);
 
     if(region==-1){
-        printf("out of region RIP %x, virtual address %x, error code %x\n",RIP,virtual_add,error_code);
-        printf("****************\n");
+        printf("error at RIP %x, virtual address %x, error code %x\n",RIP,virtual_add,error_code);
+        //printf("****************\n");
         do_exit();
         return 0;
     }
     struct mm_segment m;
     if(region==1){
         m = current->mms[MM_SEG_DATA];
-        printf("next_free %x\n",m.next_free);
-        printf("allocating in MM_SEG_DATA\n");
+        //printf("next_free %x\n",m.next_free);
+        //printf("allocating in MM_SEG_DATA\n");
         allocate(virtual_add,m);
     }
     else if(region==2){
         if((error_code&0x2)==2){
-            printf("write error at RIP %x, virtual address %x, error code %x\n",RIP,virtual_add,error_code);
-            printf("****************\n");
+            printf("error at RIP %x, virtual address %x, error code %x\n",RIP,virtual_add,error_code);
+            //printf("****************\n");
             do_exit();
             return 0;
         }
-        printf("allocating in MM_SEG_RODATA\n");
+        //printf("allocating in MM_SEG_RODATA\n");
         m = current->mms[MM_SEG_RODATA];
         allocate(virtual_add,m);
     }
     else{ 
-        printf("allocating in MM_SEG_STACK\n");
+        //printf("allocating in MM_SEG_STACK\n");
         m = current->mms[MM_SEG_STACK];
         allocate(virtual_add,m);
     }
-    //printf("page fault handler: unimplemented!\n");
-    //error in iretq.
-    printf("****************\n");
+    //printf("****************\n");
     asm volatile ("movq %0, %%rsp;"
                     :: "r" (save));
     //restoring general purpose registers
@@ -380,4 +370,3 @@ extern u64 handle_page_fault(void)
     
     return 0;
 }
-
