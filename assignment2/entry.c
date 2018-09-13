@@ -35,8 +35,6 @@ u64 do_syscall(int syscall, u64 param1, u64 param2, u64 param3, u64 param4)
 
                                   if((param1 + length-1)/4096 > (param1)/4096)
                                     virtual_add  = param1+length -1;
-                                  if((param1 + length)/4096 > (param1)/4096)
-                                    virtual_add  = param1+length ;
                                   else
                                     continue;  
                                 }
