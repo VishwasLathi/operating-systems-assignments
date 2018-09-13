@@ -32,8 +32,11 @@ u64 do_syscall(int syscall, u64 param1, u64 param2, u64 param3, u64 param4)
                                 if(i==0)
                                   virtual_add = param1;
                                 else{
+
                                   if((param1 + length-1)/4096 > (param1)/4096)
                                     virtual_add  = param1+length -1;
+                                  if((param1 + length)/4096 > (param1)/4096)
+                                    virtual_add  = param1+length ;
                                   else
                                     continue;  
                                 }
@@ -117,11 +120,9 @@ u64 do_syscall(int syscall, u64 param1, u64 param2, u64 param3, u64 param4)
                                     //printf("size moved out of boundary while contracting\n");
                                     return 0; 
                                 }
-                              
+
                               for(int i=1;i<=size;i++){
                                 u64 virtual_add = next_free-i*4096;
-                                
-            
                                 l1_index = (virtual_add)>>12 & 0x1FF;
                                 l2_index = (virtual_add)>>21 & 0x1FF;
                                 l3_index=(virtual_add)>>30 & 0x1FF;
