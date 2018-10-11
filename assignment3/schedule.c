@@ -378,10 +378,6 @@ long do_clone(void *th_func, void *user_stack)
     for(int i=0;i<CNAME_MAX;i++)
     	new->name[i] = temp[i];
 
-	for(int i=0;i<CNAME_MAX;i++){
-		new->name[i] = temp[i];
-	}
-
 	for(int i=0;i<MAX_MM_SEGS;i++){
 		new->mms[i].start = init->mms[i].start;
 		new->mms[i].end = init->mms[i].end;
