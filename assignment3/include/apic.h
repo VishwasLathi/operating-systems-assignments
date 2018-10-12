@@ -20,6 +20,7 @@
 
 extern void init_apic(void);
 extern void install_apic_mapping(u64 pl4);
+extern void remove_apic_mapping(u64 pl4);
 extern int is_apic_base(u64);
 extern void ack_irq();
 #endif
