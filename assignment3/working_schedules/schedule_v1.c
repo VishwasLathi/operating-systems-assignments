@@ -6,6 +6,31 @@
 static u64 numticks;
 enum type{TIMER, SLEEPING, DO_EXIT}; 
 
+
+static void print_pcb(struct exec_context *current)
+{
+    printf("rbp = %x\n", current->regs.rbp);
+    printf("entry_rip = %x\n", current->regs.entry_rip);
+    printf("entry_cs = %x\n", current->regs.entry_cs);
+    printf("entry_rflags = %x\n", current->regs.entry_rflags);
+    printf("entry_rsp = %x\n", current->regs.entry_rsp);
+    printf("entry_ss = %x\n", current->regs.entry_ss);
+
+    printf("rbx = %x\n", current->regs.rbx);
+    printf("rcx = %x\n", current->regs.rcx);
+    printf("rdx = %x\n", current->regs.rdx);
+    printf("rsi = %x\n", current->regs.rsi);
+    printf("rdi = %x\n", current->regs.rdi);
+    printf("r8 = %x\n", current->regs.r8);
+    printf("r9 = %x\n", current->regs.r9);
+    printf("r10 = %x\n", current->regs.r10);
+    printf("r11 = %x\n", current->regs.r11);
+    printf("r12 = %x\n", current->regs.r12);
+    printf("r13 = %x\n", current->regs.r13);
+    printf("r14 = %x\n", current->regs.r14);
+    printf("r15 = %x\n", current->regs.r15);
+}
+
 static struct exec_context *pick_next_context(int type)
 {
    	struct exec_context *current = get_current_ctx();	
@@ -59,6 +84,8 @@ void handle_timer_tick()
    and invoke schedule
  */
 	u64 save_rsp;
+	u64* rsp_pointer;
+	// u64* rbp_pointer;	
 	asm volatile ("push %r8;");
 	asm volatile ("push %r9;");
 	asm volatile ("push %r10;");
@@ -74,7 +101,8 @@ void handle_timer_tick()
 	asm volatile ("push %rdi;");
 	asm volatile ("push %rsi;");
 	asm volatile ("movq %%rsp, %0;" : "=r"(save_rsp));
-
+	asm volatile ("movq %%rsp, %0;" : "=r"(rsp_pointer));
+	// asm volatile ("movq %%rbp, %0;" : "=r"(rbp_pointer));
 	u64 ustackp,urip;
 	asm volatile ("movq 32(%%rbp), %0;" : "=r"(ustackp));
 	asm volatile ("movq 8(%%rbp), %0;" : "=r"(urip));
@@ -108,24 +136,20 @@ void handle_timer_tick()
 
 	if(new->pid!=current->pid){
 		printf("schedluing in timer: old pid = %d  new pid  = %d\n", current->pid, new->pid); /*XXX: Don't remove*/
-		
-		//SAVING THE CURRENT CONTEXT.
-
-		asm volatile ("movq (%1), %0;" : "=r" (current->regs.rsi) : "r" (save_rsp));
-		asm volatile ("movq 8(%1), %0;" : "=r" (current->regs.rdi) : "r" (save_rsp));
-		asm volatile ("movq 16(%1), %0;" : "=r" (current->regs.rdx) : "r" (save_rsp));
-		asm volatile ("movq 24(%1), %0;" : "=r" (current->regs.rcx) : "r" (save_rsp));
-		asm volatile ("movq 32(%1), %0;" : "=r" (current->regs.rbx) : "r" (save_rsp));
-		asm volatile ("movq 40(%1), %0;" : "=r" (current->regs.rax) : "r" (save_rsp));
-		asm volatile ("movq 48(%1), %0;" : "=r" (current->regs.r15) : "r" (save_rsp));
-		asm volatile ("movq 56(%1), %0;" : "=r" (current->regs.r14) : "r" (save_rsp));
-		asm volatile ("movq 64(%1), %0;" : "=r" (current->regs.r13) : "r" (save_rsp));
-		asm volatile ("movq 72(%1), %0;" : "=r" (current->regs.r12) : "r" (save_rsp));
-		asm volatile ("movq 80(%1), %0;" : "=r" (current->regs.r11) : "r" (save_rsp));
-		asm volatile ("movq 88(%1), %0;" : "=r" (current->regs.r10) : "r" (save_rsp));
-		asm volatile ("movq 96(%1), %0;" : "=r" (current->regs.r9) : "r" (save_rsp));
-		asm volatile ("movq 104(%1), %0;" : "=r" (current->regs.r8) : "r" (save_rsp));
-
+		current->regs.rsi = *(rsp_pointer);
+		current->regs.rdi = *(rsp_pointer+1);
+		current->regs.rdx = *(rsp_pointer+2);
+		current->regs.rcx = *(rsp_pointer+3);
+		current->regs.rbx = *(rsp_pointer+4);
+		current->regs.rax = *(rsp_pointer+5);
+		current->regs.r15 = *(rsp_pointer+6);
+		current->regs.r14 = *(rsp_pointer+7);
+		current->regs.r13 = *(rsp_pointer+8);
+		current->regs.r12 = *(rsp_pointer+9);
+		current->regs.r11 = *(rsp_pointer+10);
+		current->regs.r10 = *(rsp_pointer+11);
+		current->regs.r9 = *(rsp_pointer+12);
+		current->regs.r8 = *(rsp_pointer+13);
 
 		asm volatile ("movq 40(%%rbp), %0;" : "=r"(current->regs.entry_ss));
 		asm volatile ("movq 32(%%rbp), %0;" : "=r"(current->regs.entry_rsp));
@@ -134,13 +158,25 @@ void handle_timer_tick()
 		asm volatile ("movq 8(%%rbp), %0;" : "=r"(current->regs.entry_rip));
 		asm volatile ("movq (%%rbp), %0;" : "=r"(current->regs.rbp));
 		
-		//LOADING THE NEW CONTEXT.
-		asm volatile ("movq %0, (%%rbp);" :: "r" (new->regs.rbp));
-		asm volatile ("movq %0, 8(%%rbp);":: "r" (new->regs.entry_rip));
-		asm volatile ("movq %0, 16(%%rbp);":: "r" (new->regs.entry_cs));
-		asm volatile ("movq %0, 24(%%rbp);":: "r" (new->regs.entry_rflags));
-		asm volatile ("movq %0, 32(%%rbp);":: "r" (new->regs.entry_rsp));
-		asm volatile ("movq %0, 40(%%rbp);":: "r" (new->regs.entry_ss));
+
+		// *(rbp_pointer)=new->regs.rbp;
+		// *(rbp_pointer+1)=new->regs.entry_rip;
+		// *(rbp_pointer+2)=new->regs.entry_cs;
+		// *(rbp_pointer+3)=new->regs.entry_rflags;
+		// *(rbp_pointer+4)=new->regs.entry_rsp;
+		// *(rbp_pointer+5)=new->regs.entry_ss;
+		asm volatile ("movq %0, (%%rbp);"
+                :: "r" (new->regs.rbp));
+		asm volatile ("movq %0, 8(%%rbp);"
+	                :: "r" (new->regs.entry_rip));
+		asm volatile ("movq %0, 16(%%rbp);"
+	                :: "r" (new->regs.entry_cs));
+		asm volatile ("movq %0, 24(%%rbp);"
+	                :: "r" (new->regs.entry_rflags));
+		asm volatile ("movq %0, 32(%%rbp);"
+	                :: "r" (new->regs.entry_rsp));
+		asm volatile ("movq %0, 40(%%rbp);"
+	                :: "r" (new->regs.entry_ss));
 	
 		ack_irq();
 		set_tss_stack_ptr(new);
@@ -214,12 +250,18 @@ void do_exit()
 	set_tss_stack_ptr(new);
 	set_current_ctx(new);
 
-	asm volatile ("movq %0, (%%rbp);" :: "r" (new->regs.rbp));
-	asm volatile ("movq %0, 8(%%rbp);":: "r" (new->regs.entry_rip));
-	asm volatile ("movq %0, 16(%%rbp);":: "r" (new->regs.entry_cs));
-	asm volatile ("movq %0, 24(%%rbp);":: "r" (new->regs.entry_rflags));
-	asm volatile ("movq %0, 32(%%rbp);":: "r" (new->regs.entry_rsp));
-	asm volatile ("movq %0, 40(%%rbp);":: "r" (new->regs.entry_ss));
+	asm volatile ("movq %0, (%%rbp);"
+                :: "r" (new->regs.rbp));
+	asm volatile ("movq %0, 8(%%rbp);"
+                :: "r" (new->regs.entry_rip));
+	asm volatile ("movq %0, 16(%%rbp);"
+                :: "r" (new->regs.entry_cs));
+	asm volatile ("movq %0, 24(%%rbp);"
+                :: "r" (new->regs.entry_rflags));
+	asm volatile ("movq %0, 32(%%rbp);"
+                :: "r" (new->regs.entry_rsp));
+	asm volatile ("movq %0, 40(%%rbp);"
+                :: "r" (new->regs.entry_ss));
 
 	asm volatile ("movq %0, %%r8;" :: "r"(new->regs.r8));
 	asm volatile ("movq %0, %%r9;" :: "r"(new->regs.r9));
@@ -251,6 +293,10 @@ long do_sleep(u32 ticks)
 	current->ticks_to_sleep = ticks;
 	current->state  = WAITING;
 	
+	// u64* save_rbp;
+	// asm volatile("mov %%cs, %0" : "=r" ((current->regs).entry_cs));
+ //    asm volatile("mov %%ss, %0" : "=r" ((current->regs).entry_cs));
+    // asm volatile("mov %%rbp, %0" : "=r"(save_rbp));
     u64* temp = (u64*)((((u64)current->os_stack_pfn+1)<<12)-8);
     current->regs.rbp = *(temp-10);
     current->regs.entry_rip = *(temp-4);
@@ -263,13 +309,24 @@ long do_sleep(u32 ticks)
 	printf("schedluing due to sleep: old pid = %d  new pid  = %d\n", current->pid, new->pid); /*XXX: Don't remove*/
 	new->state = RUNNING; 
 
-	asm volatile ("movq %0, (%%rbp);" :: "r" (new->regs.rbp));
-	asm volatile ("movq %0, 8(%%rbp);":: "r" (new->regs.entry_rip));
-	asm volatile ("movq %0, 16(%%rbp);":: "r" (new->regs.entry_cs));
-	asm volatile ("movq %0, 24(%%rbp);":: "r" (new->regs.entry_rflags));
-	asm volatile ("movq %0, 32(%%rbp);":: "r" (new->regs.entry_rsp));
-	asm volatile ("movq %0, 40(%%rbp);":: "r" (new->regs.entry_ss));
-
+	// *(save_rbp)=new->regs.rbp;
+	// *(save_rbp+1)=new->regs.entry_rip;
+	// *(save_rbp+2)=new->regs.entry_cs;
+	// *(save_rbp+3)=new->regs.entry_rflags;
+	// *(save_rbp+4)=new->regs.entry_rsp;
+	// *(save_rbp+5)=new->regs.entry_ss;
+	asm volatile ("movq %0, (%%rbp);"
+                :: "r" (new->regs.rbp));
+	asm volatile ("movq %0, 8(%%rbp);"
+                :: "r" (new->regs.entry_rip));
+	asm volatile ("movq %0, 16(%%rbp);"
+                :: "r" (new->regs.entry_cs));
+	asm volatile ("movq %0, 24(%%rbp);"
+                :: "r" (new->regs.entry_rflags));
+	asm volatile ("movq %0, 32(%%rbp);"
+                :: "r" (new->regs.entry_rsp));
+	asm volatile ("movq %0, 40(%%rbp);"
+                :: "r" (new->regs.entry_ss));
 
 	set_tss_stack_ptr(new);
 	set_current_ctx(new);
@@ -302,66 +359,140 @@ long do_sleep(u32 ticks)
 long do_clone(void *th_func, void *user_stack)
 {
  
-	struct exec_context *new = get_new_ctx();
-	struct exec_context* init = get_ctx_by_pid(1);
-	new->type = init->type;
-	new->state = READY;
-	new->used_mem = init->used_mem;
-	new->pgd = init->pgd;
-	new->os_stack_pfn = os_pfn_alloc(OS_PT_REG);
-	new->os_rsp = init->os_rsp;
-	//DOUBT
-	new->ticks_to_alarm = 0;
-	new->ticks_to_sleep = 0;
-	new->pending_signal_bitmap = 0x0;
-	for(int i=0;i<MAX_SIGNALS;i++){
-		new->sighandlers[i] = init->sighandlers[i];
-	}
-	char str[20];
-	char temp[CNAME_MAX];
+	// struct exec_context *new = get_new_ctx();
+	// struct exec_context* init = get_ctx_by_pid(1);
+	// new->type = init->type;
+	// new->state = READY;
+	// new->used_mem = init->used_mem;
+	// new->pgd = init->pgd;
+	// new->os_stack_pfn = os_pfn_alloc(OS_PT_REG);
+	// new->os_rsp = init->os_rsp;
+	// //DOUBT
+	// new->ticks_to_alarm = 0;
+	// new->ticks_to_sleep = 0;
+	// new->pending_signal_bitmap = 0x0;
+	// for(int i=0;i<MAX_SIGNALS;i++){
+	// 	new->sighandlers[i] = init->sighandlers[i];
 
-	int i=0;
-	while(init->name[i]!='\0'){
-		temp[i] = init->name[i];
-		i++;
-	}
-    int rem, len = 0, n,num;
-    n = new->pid;
-    num = n;
-    while (n != 0){
-        len++;
-        n /= 10;
+	// }
+	// char str[20];
+	// char temp[CNAME_MAX];
+
+	// int i=0;
+	// while(init->name[i]!='\0'){
+	// 	temp[i] = init->name[i];
+	// 	i++;
+	// }
+ //    int rem, len = 0, n,num;
+ //    n = new->pid;
+ //    num = n;
+ //    while (n != 0){
+ //        len++;
+ //        n /= 10;
+ //    }
+ //    for (int i = 0; i < len; i++){
+ //        rem = num % 10;
+ //        num = num / 10;
+ //        str[len - (i + 1)] = rem + '0';
+ //    }
+
+ //    str[len] = '\0';
+ //    for(int j=0;j<=len;j++){
+ //    	temp[i++] = str[j];
+ //    }
+ //    for(int i=0;i<CNAME_MAX;i++)
+ //    	new->name[i] = temp[i];
+
+	// for(int i=0;i<MAX_MM_SEGS;i++){
+	// 	new->mms[i].start = init->mms[i].start;
+	// 	new->mms[i].end = init->mms[i].end;
+	// 	new->mms[i].next_free = init->mms[i].next_free;
+	// 	new->mms[i].access_flags = init->mms[i].access_flags;
+	// }
+
+	// new->regs = init->regs;
+	// new->regs.entry_cs = 0x23;
+	// new->regs.entry_ss = 0x2b;
+	// new->regs.entry_rip = (u64)(th_func);
+	// new->regs.entry_rsp = (u64)(user_stack);
+	// new->regs.rbp = new->regs.entry_rsp;
+	// new->alarm_config_time =0 ;
+
+	// u64* address = (u64*)((((u64)init->os_stack_pfn+1)<<12)-8);
+ //  	new->regs.entry_rflags = *(address-2);
+ //  	printf("process CLONED and created pid %d, name %s\n",new->pid,new->name);
+ //  	print_pcb(new);
+	// return 0; 
+
+
+	 // itoa
+    inline void num_to_str(char* str, int num)
+    {
+        int rev = 0;
+        while (num > 0)
+        {
+            rev = rev * 10 + num % 10;
+            num /= 10;
+        }
+
+        int i = 0;
+        while (rev > 0)
+        {
+            str[i] = '0' + rev % 10;
+            rev /= 10;
+            i++;
+        }
+        str[i] = '\0';
     }
-    for (int i = 0; i < len; i++){
-        rem = num % 10;
-        num = num / 10;
-        str[len - (i + 1)] = rem + '0';
-    }
 
-    str[len] = '\0';
-    for(int j=0;j<=len;j++){
-    	temp[i++] = str[j];
-    }
-    for(int i=0;i<CNAME_MAX;i++)
-    	new->name[i] = temp[i];
+    /* printf("Cloning, ustack: %x\n", (u64) user_stack); */
 
-	for(int i=0;i<MAX_MM_SEGS;i++){
-		new->mms[i] = init->mms[i];
-	}
+    struct exec_context *current = get_current_ctx();
+    struct exec_context *new = get_new_ctx();
 
-	new->regs = init->regs;
-	new->regs.entry_cs = 0x23;
-	new->regs.entry_ss = 0x2b;
-	new->regs.entry_rip = (u64)(th_func);
-	new->regs.entry_rsp = (u64)(user_stack);
-	new->regs.rbp = new->regs.entry_rsp;
-	new->alarm_config_time =0 ;
+    // Copy all required from parent
+    new->type = current->type;
+    new->used_mem = current->used_mem;
+    new->pgd = current->pgd;
+    new->os_rsp = current->os_rsp;
+    for (int i = 0; i < MAX_MM_SEGS; i++)
+        (new->mms)[i] = (current->mms)[i];
+    for (int i = 0; i < MAX_SIGNALS; i++)
+        (new->sighandlers)[i] = (current->sighandlers)[i];
 
-	u64* address = (u64*)((((u64)init->os_stack_pfn+1)<<12)-8);
-  	new->regs.entry_rflags = *(address-2);
-  	printf("process CLONED and created pid %d, name %s\n",new->pid,new->name);
+    new->pending_signal_bitmap = 0;
+    new->ticks_to_sleep = 0;
+    new->alarm_config_time = 0;
+    new->ticks_to_alarm = 0;
 
-	return 0; 
+    new->os_stack_pfn = os_pfn_alloc(OS_PT_REG);
+
+    // parent's name + str(parent's pid)
+    char name[CNAME_MAX];
+    int length = strlen(current->name);
+    memcpy(name, current->name, length);
+    char pid[CNAME_MAX];
+    num_to_str(pid, current->pid);
+    int pid_len = strlen(pid);
+    if ((length + pid_len) < CNAME_MAX)
+        strcat(name, pid);
+    memcpy(new->name, name, pid_len);
+
+    // Store req. reg. values and zero others
+    new->regs = current->regs;
+    new->regs.entry_rip = (u64) th_func;
+    new->regs.entry_cs = 0x23;
+    new->regs.entry_rsp = (u64) user_stack;
+    new->regs.entry_ss = 0x2B;
+    new->regs.rbp = (u64) user_stack;
+    u64* address = (u64*) translate((((u64)current->os_stack_pfn + 1) << 12) - 8);
+    new->regs.entry_rflags = *(address-2);
+
+    print_pcb(new);
+
+    // Release it to the wild!
+    new->state = READY;
+    return 0;
 }
 
 long invoke_sync_signal(int signo, u64 *ustackp, u64 *urip)
@@ -372,6 +503,12 @@ long invoke_sync_signal(int signo, u64 *ustackp, u64 *urip)
    /*Default behavior is exit( ) if sighandler is not registered for SIGFPE or SIGSEGV.
     Ignore for SIGALRM*/
  	struct exec_context *current = get_current_ctx();  
+ 	// if(signo==SIGALRM)
+ 	// 	printf("alarm\n");
+ 	// if(signo==SIGSEGV)
+ 	// 	printf("segmentation fault here\n");
+ 	// if(signo==SIGFPE)
+ 	// 	printf("floating point\n");
 
    	if(current->sighandlers[signo]==NULL){
 		if(signo != SIGALRM)
