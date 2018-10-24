@@ -214,6 +214,7 @@ void do_exit()
 	printf("exiting process pid %d\n", current->pid);
 	printf("schedluing after do_exit: old pid = %d  new pid  = %d\n", current->pid, new->pid); /*XXX: Don't remove*/
 
+	os_pfn_free(OS_PT_REG,current->os_stack_pfn);
 	set_tss_stack_ptr(new);
 	set_current_ctx(new);
 
