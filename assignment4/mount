@@ -1,0 +1,6 @@
+#!/bin/bash
+fusermount -u mnt
+rm -rf mnt
+mkdir mnt
+./objfs mnt -o use_ino
+

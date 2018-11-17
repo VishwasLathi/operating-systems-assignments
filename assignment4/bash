@@ -1,0 +1,10 @@
+make clean
+fusermount -u mnt
+#rm -rf mnt
+touch objstore.c
+make
+#mkdir mnt
+./objfs mnt -o use_ino
+#cd ./test	
+#make clean
+#make 

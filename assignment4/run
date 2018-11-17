@@ -1,0 +1,16 @@
+#!/bin/bash
+rm disk.img
+dd if=/dev/zero of=disk.img bs=1M count=1024
+fusermount -u mnt
+rm -rf mnt
+mkdir mnt
+rm objfs.log
+make clean
+cp objstore.c ~/Desktop/operating_systems/backups
+touch objstore.c
+make
+./objfs mnt -o use_ino
+cd ./test
+make clean
+make
+
