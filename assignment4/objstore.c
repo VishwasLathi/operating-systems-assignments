@@ -10,7 +10,6 @@
 #define free_4k(x,y) munmap((x), y)
                      
 #define MAX_OBJS 1000000 
-// #define MAX_OBJS 100
 #define OBJ_SIZE 88                     
 #define INODE_BLOCKS 22528
 #define INODE_BITMAP_SIZE 31
@@ -20,12 +19,10 @@
 #define data_block_offset 22528+287
 #define data_bitmap_offset 31
 #define INODES_PER_BLOCK 46
-// #define data_block_offset 31
 #define disk_address_bits 32
 #define data_offset  22528+287
 #define cache_blks  32768                   
-// #define cache_blks                  
-/*
+/*          
 Returns the object ID.  -1 (invalid), 0, 1 - reserved
 */
 //inode bitmap for dirty bitmap 
@@ -39,8 +36,8 @@ struct object{
      long size;
      int cache_index;
      int dirty;
-   	 int direct[4];
-   	 int indirect[4];
+     int direct[4];
+     int indirect[4];
      char key[32];
 };
 
@@ -55,14 +52,14 @@ int free_data_block(struct objfs_state *objfs){
 	int ctr=0;
 	unsigned int b = 1<<31;
     //lock
-    pthread_mutex_lock(&d_lock);
+    	pthread_mutex_lock(&d_lock);
 
 	for(int i=0;i<DATA_BITMAP_SIZE*BLOCK_SIZE/4;i++){
 		b = 1<<31;
 		for(int j=0;j<32;j++){
 			if(!(data_bitmap[i]&b)){
 				data_bitmap[i] = data_bitmap[i] | b;
-        		pthread_mutex_unlock(&d_lock);
+        			pthread_mutex_unlock(&d_lock);
 				return (data_block_offset + ctr);
 			}
 			b = b>>1;
@@ -70,7 +67,7 @@ int free_data_block(struct objfs_state *objfs){
 		}
 	}
 	
-  pthread_mutex_unlock(&d_lock);
+ 	 pthread_mutex_unlock(&d_lock);
 	// dprintf("can't find free block for writing\n");
 	return -1;
 
@@ -79,7 +76,7 @@ int free_data_block(struct objfs_state *objfs){
 long cache_blk_read(struct objfs_state *objfs,int blk,char *temp){
 	//directly read from cache
 	#ifdef CACHE
-  pthread_mutex_lock(&cache_lock);
+  	pthread_mutex_lock(&cache_lock);
 	char* start = cache_ptr +  BLOCK_SIZE * (blk%cache_blks);
 
 	if(cache_index[blk%cache_blks] == -1){
@@ -109,12 +106,12 @@ long cache_blk_read(struct objfs_state *objfs,int blk,char *temp){
 	for(int i=0;i<BLOCK_SIZE;i++)
 			*(temp+i) = *(start+i);
     
-    pthread_mutex_unlock(&cache_lock);
-    return 0;
+   	pthread_mutex_unlock(&cache_lock);
+   	return 0;
 
 	#else
 	read_block(objfs,blk,(char*)temp);
-  return 0;
+  	return 0;
 
 	#endif	
 	return 0;
@@ -122,7 +119,7 @@ long cache_blk_read(struct objfs_state *objfs,int blk,char *temp){
 
 long cache_blk_write(struct objfs_state *objfs,int blk,char *temp){
 	#ifdef CACHE
-  pthread_mutex_lock(&cache_lock);
+  	pthread_mutex_lock(&cache_lock);
 	char* start = cache_ptr + BLOCK_SIZE * (blk%cache_blks);
 
 	if(cache_index[blk%cache_blks]==-1 || cache_index[blk%cache_blks] == blk/cache_blks){
@@ -143,12 +140,12 @@ long cache_blk_write(struct objfs_state *objfs,int blk,char *temp){
 	}
 	cache_index[blk%cache_blks] = blk/cache_blks;
 	cache_dirty[blk%cache_blks] = 1;
-  pthread_mutex_unlock(&cache_lock);
-  return 0;
+  	pthread_mutex_unlock(&cache_lock);
+  	return 0;
 
 	#else
-		write_block(objfs,blk,temp);
-    return 0;
+	write_block(objfs,blk,temp);
+    	return 0;
 	#endif
 	
 	return 0;	
@@ -235,14 +232,9 @@ long create_object(const char *key, struct objfs_state *objfs)
     			// dprintf("found free object whith id %d, bit value %ud,i %d\n",ctr+2,inode_bitmap[i],i);
     			free = obj;
     			obj->id = ctr+2;
-          pthread_mutex_unlock(&i_lock);
+		        pthread_mutex_unlock(&i_lock);
           
     		}
-    		// else if((b&inode_bitmap[i]) && !strcmp(obj->key,key)){
-    		// 	// dprintf("duplicate key present\n");
-      //     pthread_mutex_unlock(&i_lock);
-    		// 	return -1;
-    		// }
     		b = b>>1;
     		ctr++;
     		obj = a + ctr;
@@ -254,11 +246,7 @@ long create_object(const char *key, struct objfs_state *objfs)
         // dprintf("%s: objstore full\n", __func__);
         return -1;
     } 
-    // dprintf("reached the end of create_object\n");
     strcpy(free->key, key);
-    //init_object_cached(obj);
-    // dprintf("free object id %d\n", free->id);
-    // pthread_mutex_unlock(&i_lock);
     return free->id;	
 }
 /* 
@@ -302,8 +290,6 @@ long destroy_object(const char *key, struct objfs_state *objfs)
       if((inode_bitmap[i]&b) && obj->id && !strcmp(obj->key,key)){
         target = obj;
         inode_bitmap[i]=  inode_bitmap[i]^b;
-        // pthread_mutex_unlock(&i_lock);
-        // bit_index = i;
         pthread_mutex_unlock(&i_lock);
         dirty_array[ctr/46] = 1;
         find  = 1;
@@ -375,7 +361,6 @@ long destroy_object(const char *key, struct objfs_state *objfs)
     target->direct[i]=0;
     target->indirect[i]=0;
   } 
-  // inode_bitmap[bit_index] = bit_temp;
     return 0;
 }
 
@@ -393,7 +378,6 @@ long rename_object(const char *key, const char *newname, struct objfs_state *obj
     struct object * obj = a;
     struct object * actual;
     int find=0;
-    // dprintf("reached inside\n");
     unsigned int b= 1<<31;
     for(int i=0;i<INODE_BITMAP_SIZE*BLOCK_SIZE/4;i++){
     	b = 1<<31;
@@ -403,10 +387,8 @@ long rename_object(const char *key, const char *newname, struct objfs_state *obj
     			   actual = obj;
     			   strcpy(obj->key,newname);
     			   find = 1;
-             // dprintf("new key%s\n",newname);
     		}
     		else if((inode_bitmap[i]&b)&&!strcmp(obj->key,key)){
-    			// dprintf("duplicate key present\n");
     			return -1;
     		}
         	b = b>>1;
@@ -421,14 +403,10 @@ long rename_object(const char *key, const char *newname, struct objfs_state *obj
 // OLD WRITE
 long objstore_write(int objid, const char *buff, int size, struct objfs_state *objfs,off_t offset)
 {
-  // int curr 
   struct object* target = find_target( objfs,objid,1);
   if(target==NULL)
   	return -1;
-  //MAJOR CHANGE in calculation of a.
-  // int a = target->size/BLOCK_SIZE;
   int a = offset/BLOCK_SIZE;
-  //find first free data block from the data bitmap and set it's bit to 1.
   int data_1 = free_data_block(objfs);
 
   char* temp;
@@ -636,7 +614,7 @@ int objstore_init(struct objfs_state *objfs)
 	malloc_4k(a,INODE_BLOCKS*BLOCK_SIZE);
 	malloc_4k(inode_bitmap,INODE_BITMAP_SIZE*BLOCK_SIZE);
 	malloc_4k(data_bitmap,DATA_BITMAP_SIZE*BLOCK_SIZE);
-  malloc_4k(dirty_array,INODE_BLOCKS*4);
+  	malloc_4k(dirty_array,INODE_BLOCKS*4);
 	malloc_4k(backup,BLOCK_SIZE);
 	malloc_4k(cache_index,4*cache_blks);
 	malloc_4k(cache_dirty,4*cache_blks);
@@ -650,7 +628,7 @@ int objstore_init(struct objfs_state *objfs)
 
   	pthread_mutex_init(&d_lock,NULL);
   	pthread_mutex_init(&i_lock,NULL);
-    pthread_mutex_init(&cache_lock,NULL);
+        pthread_mutex_init(&cache_lock,NULL);
 
 	// // dprintf("reached here 1\n");
 	for(int i=0;i<INODE_BITMAP_SIZE;i++){
