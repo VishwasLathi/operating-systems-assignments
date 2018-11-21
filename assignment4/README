@@ -1,3 +1,10 @@
+INSTALL FUSE
+----------
+sudo apt-get install fuse
+sudo apt-get install libfuse-dev
+
+Make sure that the system has atlesat 10GB of free space
+
 DISK IMAGE SETUP
 ----------------
 
