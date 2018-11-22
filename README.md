@@ -64,3 +64,9 @@ For this assignment, a list of contexts is maintained in gemOS can be accessed u
 Group information: Individual 
 Submission deadline: Wednesday, 24 October 2018, 11:59 PM 
 
+[**Assignment-4**](assignment4)
+Objectives of the assignment is to implement an object store with key-value semantics (with hidden file
+semantics) using the [FUSE](https://github.com/libfuse/libfuse) APIs. As part of the assignment, you are required to build an object store on the
+disk (emulated using disk.img file), provide concurrent access mechanisms to the object store and implement
+caching.
+
