@@ -1,4 +1,4 @@
-# operating-systems-assignemts
+# operating-systems-assignments
 
 **Build To Learn (BTL) (2018/2019 - I)**
 
@@ -63,4 +63,11 @@ Objectives of the assignment are to implement new system calls (signal(), alarm(
 For this assignment, a list of contexts is maintained in gemOS can be accessed using get_ctx_list(), which returns the pointer to the first process (PID = 0). You can iterate the list as an array of pointers using PID as an index. Currently, the maximum number of contexts is defined by a macro MAX_PROCESSES which is 16 (PID=0,1...15). For more details, please refer to the definitions of struct exec_context and process states in include/context.h and include/schedule.h, respectively. A template of the required implementation is provided in schedule.c file. Details of assignment can be found in Piazza and Moodle.
 Group information: Individual 
 Submission deadline: Wednesday, 24 October 2018, 11:59 PM 
+
+[**Assignment-4**](assignment4)
+
+Objectives of the assignment is to implement an object store with key-value semantics (with hidden file
+semantics) using the [FUSE](https://github.com/libfuse/libfuse) APIs. As part of the assignment, you are required to build an object store on the
+disk (emulated using disk.img file), provide concurrent access mechanisms to the object store and implement
+caching.
 
