@@ -1,4 +1,4 @@
-# operating-systems-assignemts
+# operating-systems-assignments
 
 **Build To Learn (BTL) (2018/2019 - I)**
 
