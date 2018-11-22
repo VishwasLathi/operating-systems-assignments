@@ -1,7 +1,6 @@
 # operating-systems-assignemts
-Assignment of CS330- Operating systems
 
-Build To Learn (BTL) (2018/2019 - I)
+**Build To Learn (BTL) (2018/2019 - I)**
 
 We will gradually build an Operating System (gemOS) during the course. This OS under construction is for 64-bit X86 architecture which will be simulated by Gem5 architectural simulator. The model we follow for the course will be as follows,
 Instructor will build a part of the OS, provide the binary for the same. You can download the OS binary and boot it using gem5.
@@ -38,7 +37,7 @@ Assignment and related files can be found here.
 Group information: Individual 
 Submission deadline: Sunday, 26 August 2018, 11:59 PM 
 
-**Assignment-2 **
+**Assignment-2**
 
 At this stage, GemOS implements a command called init which creates the first user process (named as the init process with PID = 1). Source code for init process can be found in user/init.c file. The current init process invokes two system calls---getpid() and exit(). The objective of the assignment is to implement new system calls and exception handlers and enable support for lazy memory allocation. To handle the system calls, GemOS installs an IDT entry at offset 0x80. The system call handlers in in GemOS are defined in entry.c. 
 
