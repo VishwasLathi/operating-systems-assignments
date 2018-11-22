@@ -6,7 +6,7 @@ We will gradually build an Operating System (gemOS) during the course. This OS u
 Instructor will build a part of the OS, provide the binary for the same. You can download the OS binary and boot it using gem5.
 In assignments, one OS feature or functionality will be implemented by you.
 The process will repeat.
-Gem5: A small HOWTO document regarding Gem5 setup, boot gemOS using Gem5 etc. can be found here. Please go through the document, create your own setup and test run as soon as possible. 
+Gem5: A small HOWTO document regarding Gem5 setup, boot gemOS using Gem5 etc. can be found [here](gemos-howto.pdf). Please go through the document, create your own setup and test run as soon as possible. 
 
 **Assignment-1** 
 
