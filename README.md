@@ -54,7 +54,7 @@ Details of assignment can be found in Piazza and Moodle.
 Group information: Individual 
 Submission deadline: Wednesday, 12 September 2018, 11:59 PM 
 
-[**Assignment-3**](assignment3a)
+[**Assignment-3**](assignment3)
 
 At this stage, GemOS implements a command called init which creates the first user process (named as the init process with PID = 1). Source code for init process can be found in user/init.c file. The current init process supports five system calls---getpid(), exit(), write(), expand() and shrink(). gemOS also implements lazy memory allocation by handling page fault exception. Further, divide-by-zero exception is also handled by the gemOS. Now we are ready to take the next step.
 

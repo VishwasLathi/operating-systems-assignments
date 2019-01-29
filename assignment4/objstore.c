@@ -1,3 +1,4 @@
+//XXX Bug: Rename not working prpoerly 
 #include "lib.h"
 #include <pthread.h>
 #define malloc_4k(x,y) do{\
